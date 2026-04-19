@@ -6,8 +6,9 @@ import '../utils/formatters.dart';
 
 class GastoCard extends StatelessWidget {
   final Gasto gasto;
+  final VoidCallback? onDismissed;
 
-  const GastoCard({super.key, required this.gasto});
+  const GastoCard({super.key, required this.gasto, this.onDismissed});
 
   IconData _getCategoryIcon(String categoria) {
     switch (categoria.toLowerCase()) {
@@ -28,7 +29,33 @@ class GastoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
     final icon = _getCategoryIcon(gasto.categoria);
+    final card = _buildCard(colors, icon);
 
+    if (onDismissed == null) return card;
+
+    return Dismissible(
+      key: Key(gasto.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: kExpenseRed,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: const Icon(
+          Icons.delete_outline_rounded,
+          color: Colors.white,
+          size: 24,
+        ),
+      ),
+      onDismissed: (_) => onDismissed!(),
+      child: card,
+    );
+  }
+
+  Widget _buildCard(AppColors colors, IconData icon) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),

@@ -1,38 +1,45 @@
 import 'package:flutter/material.dart';
 
 import '../models/gasto.dart';
+import '../repositories/gasto_repository_impl.dart';
 import '../utils/constants.dart';
 import '../utils/formatters.dart';
 import '../widgets/gasto_card.dart';
 
-class ExtratoScreen extends StatelessWidget {
-  const ExtratoScreen({super.key});
+class ExtratoScreen extends StatefulWidget {
+  final VoidCallback? onTransacaoRemovida;
+  const ExtratoScreen({super.key, this.onTransacaoRemovida});
 
-  static final _hoje = DateTime.now();
-  static final _ontem = DateTime.now().subtract(const Duration(days: 1));
+  @override
+  State<ExtratoScreen> createState() => _ExtratoScreenState();
+}
 
-  static final List<Gasto> _gastos = [
-    Gasto(
-      titulo: 'Supermercado',
-      valor: -50.68,
-      categoria: 'alimentação',
-      data: _hoje,
-    ),
-    Gasto(titulo: 'Uber', valor: -6.00, categoria: 'transporte', data: _hoje),
-    Gasto(titulo: 'Netflix', valor: -39.90, categoria: 'lazer', data: _hoje),
-    Gasto(
-      titulo: 'Pagamento recebido',
-      valor: 650.00,
-      categoria: 'pagamento',
-      data: _ontem,
-    ),
-    Gasto(
-      titulo: 'Almoço',
-      valor: -32.50,
-      categoria: 'alimentação',
-      data: _ontem,
-    ),
-  ];
+class _ExtratoScreenState extends State<ExtratoScreen> {
+  List<Gasto> _gastos = [];
+  bool _isLoading = true;
+  final _repository = GastoRepositoryImpl();
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarGastos();
+  }
+
+  Future<void> _carregarGastos() async {
+    try {
+      final lista = await _repository.getAll();
+      if (!mounted) return;
+      setState(() => _gastos = lista);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _remover(Gasto gasto) async {
+    await _repository.remove(gasto.id);
+    setState(() => _gastos.removeWhere((g) => g.id == gasto.id));
+    widget.onTransacaoRemovida?.call();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +78,7 @@ class ExtratoScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        formatMesAno(_hoje),
+                        formatMesAno(DateTime.now()),
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.white.withValues(alpha: 0.6),
@@ -89,12 +96,26 @@ class ExtratoScreen extends StatelessWidget {
                         topRight: Radius.circular(30),
                       ),
                     ),
-                    child: ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-                      itemCount: _gastos.length,
-                      itemBuilder: (context, index) =>
-                          GastoCard(gasto: _gastos[index]),
-                    ),
+                    child: _isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : _gastos.isEmpty
+                            ? Center(
+                                child: Text(
+                                  'Nenhuma transação ainda.',
+                                  style: TextStyle(color: colors.textSecondary),
+                                ),
+                              )
+                            : ListView.builder(
+                                padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+                                itemCount: _gastos.length,
+                                itemBuilder: (context, index) {
+                                  final gasto = _gastos[index];
+                                  return GastoCard(
+                                    gasto: gasto,
+                                    onDismissed: () => _remover(gasto),
+                                  );
+                                },
+                              ),
                   ),
                 ),
               ],

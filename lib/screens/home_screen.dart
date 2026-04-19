@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../models/gasto.dart';
+import '../repositories/gasto_repository_impl.dart';
 import '../utils/constants.dart';
 import '../utils/formatters.dart';
 import '../widgets/gasto_card.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onProfileTap;
+  final VoidCallback? onTransacaoRemovida;
 
-  const HomeScreen({super.key, this.onProfileTap});
+  const HomeScreen({super.key, this.onProfileTap, this.onTransacaoRemovida});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -17,48 +19,57 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _filtroSelecionado = 0;
   bool _valoresVisiveis = true;
+  bool _isLoading = true;
+  List<Gasto> _gastos = [];
+  final _repository = GastoRepositoryImpl();
 
   static const double _disponivel = 752.20;
-
   final _filtros = const ['Todos', 'Receita', 'Despesa'];
-
-  late final DateTime _hoje;
-  late final DateTime _ontem;
-  late final List<Gasto> _gastos;
 
   @override
   void initState() {
     super.initState();
-    _hoje = DateTime.now();
-    _ontem = _hoje.subtract(const Duration(days: 1));
-    _gastos = [
-      Gasto(
-        titulo: 'Supermercado',
-        valor: -50.68,
-        categoria: 'alimentação',
-        data: _hoje,
-      ),
-      Gasto(titulo: 'Uber', valor: -6.00, categoria: 'transporte', data: _hoje),
-      Gasto(titulo: 'Netflix', valor: -39.90, categoria: 'lazer', data: _hoje),
-      Gasto(
-        titulo: 'Pagamento recebido',
-        valor: 650.00,
-        categoria: 'pagamento',
-        data: _ontem,
-      ),
-      Gasto(
-        titulo: 'Almoço',
-        valor: -32.50,
-        categoria: 'alimentação',
-        data: _ontem,
-      ),
-    ];
+    _carregarGastos();
   }
 
-  List<Gasto> get _gastosHoje =>
-      _gastos.where((g) => isSameDay(g.data, _hoje)).toList();
-  List<Gasto> get _gastosOntem =>
-      _gastos.where((g) => isSameDay(g.data, _ontem)).toList();
+  Future<void> _carregarGastos() async {
+    try {
+      final lista = await _repository.getAll();
+      if (!mounted) return;
+      setState(() => _gastos = lista);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _remover(Gasto gasto) async {
+    await _repository.remove(gasto.id);
+    widget.onTransacaoRemovida?.call();
+  }
+
+  List<Gasto> get _gastosFiltrados {
+    if (_filtroSelecionado == 0) return _gastos;
+    if (_filtroSelecionado == 1) return _gastos.where((g) => g.valor > 0).toList();
+    return _gastos.where((g) => g.valor < 0).toList();
+  }
+
+  Map<String, List<Gasto>> _agruparPorData(List<Gasto> gastos) {
+    final hoje = DateTime.now();
+    final ontem = hoje.subtract(const Duration(days: 1));
+    final Map<String, List<Gasto>> grupos = {};
+    for (final g in gastos) {
+      final String label;
+      if (isSameDay(g.data, hoje)) {
+        label = 'HOJE';
+      } else if (isSameDay(g.data, ontem)) {
+        label = 'ONTEM';
+      } else {
+        label = formatDataCurta(g.data).toUpperCase();
+      }
+      grupos.putIfAbsent(label, () => []).add(g);
+    }
+    return grupos;
+  }
 
   String _formatarValor(double valor) =>
       _valoresVisiveis ? formatBRL(valor) : kValorOculto;
@@ -166,9 +177,33 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 16),
                     _buildFiltros(colors),
                     const SizedBox(height: 24),
-                    _buildGrupo('HOJE', _gastosHoje, colors),
-                    const SizedBox(height: 20),
-                    _buildGrupo('ONTEM', _gastosOntem, colors),
+                    if (_isLoading)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 40),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else if (_gastosFiltrados.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 40),
+                          child: Text(
+                            'Nenhuma transação encontrada.',
+                            style: TextStyle(color: colors.textSecondary),
+                          ),
+                        ),
+                      )
+                    else
+                      ..._agruparPorData(_gastosFiltrados).entries.map(
+                        (entry) => Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildGrupo(entry.key, entry.value, colors),
+                            const SizedBox(height: 20),
+                          ],
+                        ),
+                      ),
                     const SizedBox(height: 100),
                   ],
                 ),
@@ -207,19 +242,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   const Icon(Icons.arrow_upward, color: kIncomeGreen, size: 14),
                   const SizedBox(width: 4),
                 ] else if (index == 2) ...[
-                  const Icon(
-                    Icons.arrow_downward,
-                    color: kExpenseRed,
-                    size: 14,
-                  ),
+                  const Icon(Icons.arrow_downward, color: kExpenseRed, size: 14),
                   const SizedBox(width: 4),
                 ],
                 Text(
                   _filtros[index],
                   style: TextStyle(
                     fontSize: 13,
-                    fontWeight: selecionado ? FontWeight.w600 : FontWeight.w500,
-                    color: selecionado ? colors.accent : colors.textSecondary,
+                    fontWeight:
+                        selecionado ? FontWeight.w600 : FontWeight.w500,
+                    color:
+                        selecionado ? colors.accent : colors.textSecondary,
                   ),
                 ),
               ],
@@ -245,7 +278,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        ...gastos.map((g) => GastoCard(gasto: g)),
+        ...gastos.map(
+          (g) => GastoCard(gasto: g, onDismissed: () => _remover(g)),
+        ),
       ],
     );
   }
@@ -299,9 +334,9 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Container(
             width: 48,
             height: 48,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               shape: BoxShape.circle,
-              image: const DecorationImage(
+              image: DecorationImage(
                 image: NetworkImage('https://i.pravatar.cc/150?img=12'),
                 fit: BoxFit.cover,
               ),

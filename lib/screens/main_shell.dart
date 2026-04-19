@@ -4,6 +4,7 @@ import '../utils/constants.dart';
 import 'chat_screen.dart';
 import 'extrato_screen.dart';
 import 'home_screen.dart';
+import 'nova_transacao_screen.dart';
 import 'perfil_screen.dart';
 
 class MainShell extends StatefulWidget {
@@ -15,37 +16,45 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
+  int _version = 0;
 
-  late final List<Widget> _screens;
+  void _reload() => setState(() => _version++);
 
-  @override
-  void initState() {
-    super.initState();
-    _screens = [
-      HomeScreen(onProfileTap: () => setState(() => _currentIndex = 3)),
-      const ExtratoScreen(),
-      const ChatScreen(),
-      const PerfilScreen(),
-    ];
+  Future<void> _adicionarTransacao() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const NovaTransacaoScreen()),
+    );
+    if (result == true) _reload();
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
 
+    final screens = [
+      HomeScreen(
+        key: ValueKey('home-$_version'),
+        onProfileTap: () => setState(() => _currentIndex = 3),
+        onTransacaoRemovida: _reload,
+      ),
+      ExtratoScreen(
+        key: ValueKey('extrato-$_version'),
+        onTransacaoRemovida: _reload,
+      ),
+      const ChatScreen(),
+      const PerfilScreen(),
+    ];
+
     return Scaffold(
       backgroundColor: colors.background,
       extendBody: true,
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      body: IndexedStack(index: _currentIndex, children: screens),
       floatingActionButton: FloatingActionButton(
         elevation: 0,
         backgroundColor: colors.accent,
         shape: const CircleBorder(),
-        onPressed: () {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Preguiça.')));
-        },
+        onPressed: _adicionarTransacao,
         child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
