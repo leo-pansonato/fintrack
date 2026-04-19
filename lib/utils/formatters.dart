@@ -32,6 +32,10 @@ String formatDataCurta(DateTime data) =>
 String formatMesAno(DateTime data) =>
     '${_mesesCompletos[data.month - 1]} ${data.year}';
 
+/// 18/04/2026
+String formatDataDDMMYYYY(DateTime data) =>
+    '${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}/${data.year}';
+
 bool isSameDay(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month && a.day == b.day;
 
