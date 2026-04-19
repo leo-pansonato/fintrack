@@ -9,30 +9,31 @@ class GastoCard extends StatelessWidget {
 
   const GastoCard({super.key, required this.gasto});
 
-  _CategoryIcon _getCategoryIcon(String categoria) {
+  IconData _getCategoryIcon(String categoria) {
     switch (categoria.toLowerCase()) {
       case 'alimentação':
-        return const _CategoryIcon(icon: Icons.restaurant_rounded);
+        return Icons.restaurant_rounded;
       case 'transporte':
-        return const _CategoryIcon(icon: Icons.directions_car_rounded);
+        return Icons.directions_car_rounded;
       case 'lazer':
-        return const _CategoryIcon(icon: Icons.sports_esports_rounded);
+        return Icons.sports_esports_rounded;
       case 'pagamento':
-        return const _CategoryIcon(icon: Icons.payments_rounded);
+        return Icons.payments_rounded;
       default:
-        return const _CategoryIcon(icon: Icons.attach_money_rounded);
+        return Icons.attach_money_rounded;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final cat = _getCategoryIcon(gasto.categoria);
+    final colors = Theme.of(context).extension<AppColors>()!;
+    final icon = _getCategoryIcon(gasto.categoria);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: kCardWhite,
+        color: colors.card,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -48,10 +49,10 @@ class GastoCard extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: kBackground,
+              color: colors.background,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(cat.icon, color: kAccentTeal, size: 24),
+            child: Icon(icon, color: colors.accent, size: 24),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -60,19 +61,19 @@ class GastoCard extends StatelessWidget {
               children: [
                 Text(
                   gasto.titulo,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: kTextDark,
+                    color: colors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   capitalize(gasto.categoria),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w400,
-                    color: kTextGrey,
+                    color: colors.textSecondary,
                   ),
                 ),
               ],
@@ -92,10 +93,10 @@ class GastoCard extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 formatDataCurta(gasto.data),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w400,
-                  color: kTextGrey,
+                  color: colors.textSecondary,
                 ),
               ),
             ],
@@ -104,10 +105,4 @@ class GastoCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _CategoryIcon {
-  final IconData icon;
-
-  const _CategoryIcon({required this.icon});
 }

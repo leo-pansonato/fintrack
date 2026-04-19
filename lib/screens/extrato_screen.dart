@@ -36,15 +36,17 @@ class ExtratoScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<AppColors>()!;
+
     return Scaffold(
-      backgroundColor: kBackground,
+      backgroundColor: colors.background,
       body: Stack(
         children: [
           Container(
             height: MediaQuery.of(context).size.height * 0.25,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [kPrimaryDark, kPrimaryBlue],
+                colors: [colors.gradientStart, colors.gradientEnd],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -80,9 +82,9 @@ class ExtratoScreen extends StatelessWidget {
                 ),
                 Expanded(
                   child: Container(
-                    decoration: const BoxDecoration(
-                      color: kBackground,
-                      borderRadius: BorderRadius.only(
+                    decoration: BoxDecoration(
+                      color: colors.background,
+                      borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(30),
                         topRight: Radius.circular(30),
                       ),

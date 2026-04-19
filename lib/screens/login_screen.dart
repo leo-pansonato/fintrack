@@ -24,7 +24,9 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_emailController.text.trim().isEmpty ||
         _senhaController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Preencha todos os campos para continuar.')),
+        const SnackBar(
+          content: Text('Preencha todos os campos para continuar.'),
+        ),
       );
       return;
     }
@@ -33,42 +35,52 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<AppColors>()!;
+    final topPadding = MediaQuery.of(context).padding.top;
+
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [kPrimaryDark, kPrimaryBlue],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
+      backgroundColor: colors.gradientStart,
+      body: SingleChildScrollView(
+        child: Stack(
+          children: [
+            // Gradient header
+            Container(
+              height: 310 + topPadding,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [colors.gradientStart, colors.gradientEnd],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+            // Content
+            Column(
               children: [
-                const SizedBox(height: 60),
-                // Logo
+                // Brand area
+                SizedBox(height: topPadding + 48),
                 Container(
-                  padding: const EdgeInsets.all(20),
+                  width: 80,
+                  height: 80,
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(24),
                   ),
                   child: const Icon(
                     Icons.account_balance_wallet_rounded,
-                    size: 64,
-                    color: kAccentTeal,
+                    size: 40,
+                    color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 20),
-                // Nome do app
+                const SizedBox(height: 16),
                 const Text(
                   kAppName,
                   style: TextStyle(
-                    fontSize: 32,
+                    fontSize: 28,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
+                    letterSpacing: -0.5,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -79,131 +91,240 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: Colors.white.withValues(alpha: 0.7),
                   ),
                 ),
-                const SizedBox(height: 40),
-                // Card de login
+                const SizedBox(height: 32),
+                // Form area with rounded top
                 Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
+                  width: double.infinity,
+                  constraints: BoxConstraints(
+                    minHeight:
+                        MediaQuery.of(context).size.height - 310 - topPadding + 30,
                   ),
-                  child: Column(
-                    children: [
-                      // Campo e-mail
-                      TextField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: kBackground,
-                          hintText: 'E-mail',
-                          hintStyle: const TextStyle(color: kTextGrey),
-                          prefixIcon: const Icon(Icons.email_outlined, color: kTextGrey),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: kAccentTeal, width: 1.5),
+                  decoration: BoxDecoration(
+                    color: colors.background,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(30),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 40),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Entrar na conta',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: colors.textPrimary,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Campo senha
-                      TextField(
-                        controller: _senhaController,
-                        obscureText: _obscureSenha,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: kBackground,
-                          hintText: 'Senha',
-                          hintStyle: const TextStyle(color: kTextGrey),
-                          prefixIcon: const Icon(Icons.lock_outline, color: kTextGrey),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Preencha seus dados para continuar',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        // Email field
+                        _buildLabel('E-mail', colors),
+                        const SizedBox(height: 8),
+                        _buildTextField(
+                          controller: _emailController,
+                          hint: 'seu@email.com',
+                          icon: Icons.email_outlined,
+                          colors: colors,
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        const SizedBox(height: 16),
+                        // Password field
+                        _buildLabel('Senha', colors),
+                        const SizedBox(height: 8),
+                        _buildTextField(
+                          controller: _senhaController,
+                          hint: '••••••••',
+                          icon: Icons.lock_outline,
+                          colors: colors,
+                          obscure: _obscureSenha,
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscureSenha
                                   ? Icons.visibility_off_outlined
                                   : Icons.visibility_outlined,
-                              color: kTextGrey,
+                              color: colors.textSecondary,
+                              size: 20,
                             ),
                             onPressed: () =>
                                 setState(() => _obscureSenha = !_obscureSenha),
                           ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: kAccentTeal, width: 1.5),
-                          ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      // Botão Entrar
-                      GestureDetector(
-                        onTap: _entrar,
-                        child: Container(
-                          height: 52,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [kAccentTeal, Color(0xFF00B496)],
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          alignment: Alignment.center,
-                          child: const Text(
-                            'Entrar',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                        const SizedBox(height: 12),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: GestureDetector(
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Em breve!')),
+                              );
+                            },
+                            child: Text(
+                              'Esqueci minha senha',
+                              style: TextStyle(
+                                color: colors.accent,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Esqueci minha senha
-                      GestureDetector(
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Em breve!')),
-                          );
-                        },
-                        child: const Text(
-                          'Esqueci minha senha',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: kAccentTeal,
-                            fontSize: 14,
+                        const SizedBox(height: 24),
+                        // Login button
+                        GestureDetector(
+                          onTap: _entrar,
+                          child: Container(
+                            height: 52,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  colors.gradientStart,
+                                  colors.gradientEnd,
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colors.gradientStart
+                                      .withValues(alpha: 0.3),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            alignment: Alignment.center,
+                            child: const Text(
+                              'Entrar',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 20),
+                        // Divider
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Divider(color: colors.divider, height: 1),
+                            ),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text(
+                                'ou',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: colors.textSecondary,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Divider(color: colors.divider, height: 1),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        // Create account button
+                        GestureDetector(
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Em breve!')),
+                            );
+                          },
+                          child: Container(
+                            height: 52,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: colors.card,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: colors.divider,
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              'Criar conta',
+                              style: TextStyle(
+                                color: colors.textPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 40),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLabel(String text, AppColors colors) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: colors.textPrimary,
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    required AppColors colors,
+    TextInputType? keyboardType,
+    bool obscure = false,
+    Widget? suffixIcon,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: colors.divider,
+        ),
+      ),
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        obscureText: obscure,
+        style: TextStyle(
+          fontSize: 15,
+          color: colors.textPrimary,
+        ),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(
+            color: colors.textSecondary.withValues(alpha: 0.6),
+            fontSize: 15,
+          ),
+          prefixIcon: Icon(icon, color: colors.textSecondary, size: 20),
+          suffixIcon: suffixIcon,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
           ),
         ),
       ),

@@ -83,10 +83,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<AppColors>()!;
+
     return Scaffold(
-      backgroundColor: kBackground,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: kPrimaryDark,
+        backgroundColor: colors.gradientStart,
         title: const Text(
           'Atendimento IA',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
@@ -96,7 +98,6 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       body: Column(
         children: [
-          // Lista de mensagens
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
@@ -112,9 +113,8 @@ class _ChatScreenState extends State<ChatScreen> {
               },
             ),
           ),
-          // Input de mensagem
           Container(
-            color: Colors.white,
+            color: colors.card,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: SafeArea(
               top: false,
@@ -126,9 +126,9 @@ class _ChatScreenState extends State<ChatScreen> {
                       onSubmitted: (_) => _enviarMensagem(),
                       decoration: InputDecoration(
                         filled: true,
-                        fillColor: kBackground,
+                        fillColor: colors.background,
                         hintText: 'Digite sua mensagem...',
-                        hintStyle: const TextStyle(color: kTextGrey),
+                        hintStyle: TextStyle(color: colors.textSecondary),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
                           borderSide: BorderSide.none,
@@ -151,10 +151,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   const SizedBox(width: 8),
                   GestureDetector(
                     onTap: _enviarMensagem,
-                    child: const CircleAvatar(
-                      backgroundColor: kAccentTeal,
+                    child: CircleAvatar(
+                      backgroundColor: colors.accent,
                       radius: 22,
-                      child: Icon(
+                      child: const Icon(
                         Icons.send_rounded,
                         color: Colors.white,
                         size: 20,

@@ -15,6 +15,8 @@ class ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<AppColors>()!;
+
     final borderRadius = isUser
         ? const BorderRadius.only(
             topLeft: Radius.circular(16),
@@ -38,7 +40,7 @@ class ChatBubble extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: isUser ? kAccentTeal : kCardWhite,
+          color: isUser ? colors.accent : colors.card,
           borderRadius: borderRadius,
           boxShadow: isUser
               ? null
@@ -57,7 +59,7 @@ class ChatBubble extends StatelessWidget {
               texto,
               style: TextStyle(
                 fontSize: 14,
-                color: isUser ? Colors.white : kTextDark,
+                color: isUser ? Colors.white : colors.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
@@ -65,7 +67,8 @@ class ChatBubble extends StatelessWidget {
               hora,
               style: TextStyle(
                 fontSize: 11,
-                color: (isUser ? Colors.white : kTextDark).withValues(alpha: 0.6),
+                color: (isUser ? Colors.white : colors.textPrimary)
+                    .withValues(alpha: 0.6),
               ),
             ),
           ],

@@ -6,7 +6,9 @@ import '../utils/formatters.dart';
 import '../widgets/gasto_card.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final VoidCallback? onProfileTap;
+
+  const HomeScreen({super.key, this.onProfileTap});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -61,139 +63,116 @@ class _HomeScreenState extends State<HomeScreen> {
   String _formatarValor(double valor) =>
       _valoresVisiveis ? formatBRL(valor) : kValorOculto;
 
-
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<AppColors>()!;
+
     return Scaffold(
-      backgroundColor: kBackground,
-      body: Stack(
-        children: [
-          // Fundo azul na parte de cima
-          Container(
-            height: MediaQuery.of(context).size.height * 0.45,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [kPrimaryDark, kPrimaryBlue],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+      backgroundColor: colors.background,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 180.0,
+            toolbarHeight: 90.0,
+            pinned: true,
+            elevation: 0,
+            backgroundColor: colors.gradientStart,
+            titleSpacing: 24.0,
+            title: _buildAppBarTitle(colors),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(30),
+              child: Container(
+                height: 30,
+                decoration: BoxDecoration(
+                  color: colors.background,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(30),
+                    topRight: Radius.circular(30),
+                  ),
+                ),
               ),
             ),
-          ),
-
-          SafeArea(
-            bottom: false,
-            child: Column(
-              children: [
-                _buildHeader(),
-                Expanded(
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: kBackground,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(30),
-                        topRight: Radius.circular(30),
+            flexibleSpace: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [colors.gradientStart, colors.gradientEnd],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+              child: FlexibleSpaceBar(
+                background: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        left: 24.0,
+                        right: 24.0,
+                        bottom: 50.0,
                       ),
-                    ),
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
+                        spacing: 12,
+                        mainAxisAlignment: MainAxisAlignment.start,
                         children: [
-                          const SizedBox(height: 24),
-                          // Título e "Ver tudo"
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'Transações Recentes',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: kTextDark,
-                                ),
-                              ),
-                              Text(
-                                'Ver tudo',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: kPrimaryDark.withValues(alpha: 0.8),
-                                ),
-                              ),
-                            ],
+                          _buildActionButton(
+                            icon: Icons.flag_outlined,
+                            label: 'Metas',
+                            colors: colors,
                           ),
-                          const SizedBox(height: 16),
-                          // Filtros
-                          Row(
-                            children: List.generate(_filtros.length, (index) {
-                              final selecionado = _filtroSelecionado == index;
-                              return GestureDetector(
-                                onTap: () =>
-                                    setState(() => _filtroSelecionado = index),
-                                child: Container(
-                                  margin: const EdgeInsets.only(right: 12),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: selecionado
-                                        ? kPrimaryDark.withValues(alpha: 0.05)
-                                        : kCardWhite,
-                                    borderRadius: BorderRadius.circular(24),
-                                    border: Border.all(
-                                      color: selecionado
-                                          ? Colors.transparent
-                                          : Colors.grey.withValues(alpha: 0.15),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      if (index == 1) ...[
-                                        const Icon(
-                                          Icons.arrow_upward,
-                                          color: kIncomeGreen,
-                                          size: 14,
-                                        ),
-                                        const SizedBox(width: 4),
-                                      ] else if (index == 2) ...[
-                                        const Icon(
-                                          Icons.arrow_downward,
-                                          color: kExpenseRed,
-                                          size: 14,
-                                        ),
-                                        const SizedBox(width: 4),
-                                      ],
-                                      Text(
-                                        _filtros[index],
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: selecionado
-                                              ? FontWeight.w600
-                                              : FontWeight.w500,
-                                          color: selecionado
-                                              ? kPrimaryDark
-                                              : kTextGrey,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }),
+                          _buildActionButton(
+                            icon: Icons.auto_awesome_mosaic_rounded,
+                            label: 'Mais',
+                            colors: colors,
                           ),
-                          const SizedBox(height: 24),
-                          _buildGrupo('HOJE', _gastosHoje),
-                          const SizedBox(height: 20),
-                          _buildGrupo('ONTEM', _gastosOntem),
-                          const SizedBox(height: 100),
                         ],
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Container(
+              color: colors.background,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Transações Recentes',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          'Ver tudo',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: colors.accent.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _buildFiltros(colors),
+                    const SizedBox(height: 24),
+                    _buildGrupo('HOJE', _gastosHoje, colors),
+                    const SizedBox(height: 20),
+                    _buildGrupo('ONTEM', _gastosOntem, colors),
+                    const SizedBox(height: 100),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
@@ -201,17 +180,67 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildGrupo(String label, List<Gasto> gastos) {
+  Widget _buildFiltros(AppColors colors) {
+    return Row(
+      children: List.generate(_filtros.length, (index) {
+        final selecionado = _filtroSelecionado == index;
+        return GestureDetector(
+          onTap: () => setState(() => _filtroSelecionado = index),
+          child: Container(
+            margin: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: selecionado
+                  ? colors.accent.withValues(alpha: 0.05)
+                  : colors.card,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: selecionado
+                    ? Colors.transparent
+                    : Colors.grey.withValues(alpha: 0.15),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (index == 1) ...[
+                  const Icon(Icons.arrow_upward, color: kIncomeGreen, size: 14),
+                  const SizedBox(width: 4),
+                ] else if (index == 2) ...[
+                  const Icon(
+                    Icons.arrow_downward,
+                    color: kExpenseRed,
+                    size: 14,
+                  ),
+                  const SizedBox(width: 4),
+                ],
+                Text(
+                  _filtros[index],
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: selecionado ? FontWeight.w600 : FontWeight.w500,
+                    color: selecionado ? colors.accent : colors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildGrupo(String label, List<Gasto> gastos, AppColors colors) {
     if (gastos.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: kTextGrey,
+            color: colors.textSecondary,
             letterSpacing: 1.2,
           ),
         ),
@@ -221,87 +250,73 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+  Widget _buildAppBarTitle(AppColors colors) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          _formatarValor(_disponivel),
-                          style: const TextStyle(
-                            fontSize: 36,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: () => setState(() => _valoresVisiveis = !_valoresVisiveis),
-                          child: Icon(
-                            _valoresVisiveis ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                            color: Colors.white.withValues(alpha: 0.7),
-                            size: 22,
-                          ),
-                        ),
-                      ],
+              Row(
+                children: [
+                  Text(
+                    _formatarValor(_disponivel),
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
                     ),
-                    Text(
-                      'Gastos Disponíveis',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white.withValues(alpha: 0.8),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Foto de perfil
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                  image: const DecorationImage(
-                    image: NetworkImage('https://i.pravatar.cc/150?img=12'),
-                    fit: BoxFit.cover,
                   ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () =>
+                        setState(() => _valoresVisiveis = !_valoresVisiveis),
+                    child: Icon(
+                      _valoresVisiveis
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      color: Colors.white.withValues(alpha: 0.7),
+                      size: 22,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                'Gastos Disponíveis',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white.withValues(alpha: 0.8),
                 ),
               ),
             ],
           ),
-          // Botões de ação rápidos
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20.0),
-            child: Row(
-              spacing: 12,
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                _buildActionButton(icon: Icons.flag_outlined, label: 'Metas'),
-                _buildActionButton(
-                  icon: Icons.auto_awesome_mosaic_rounded,
-                  label: 'Mais',
-                ),
-              ],
+        ),
+        GestureDetector(
+          onTap: widget.onProfileTap,
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              image: const DecorationImage(
+                image: NetworkImage('https://i.pravatar.cc/150?img=12'),
+                fit: BoxFit.cover,
+              ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildActionButton({IconData? icon, required String label}) {
+  Widget _buildActionButton({
+    IconData? icon,
+    required String label,
+    required AppColors colors,
+  }) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {},
@@ -314,12 +329,12 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Row(
             children: [
-              if (icon != null) Icon(icon, color: kPrimaryDark, size: 20),
+              if (icon != null) Icon(icon, color: colors.accent, size: 20),
               const SizedBox(width: 4),
               Text(
                 label,
                 style: TextStyle(
-                  color: kPrimaryDark,
+                  color: colors.accent,
                   fontWeight: FontWeight.w500,
                   fontSize: 11,
                 ),
