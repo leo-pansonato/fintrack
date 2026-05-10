@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 
 const String kAppName = 'FinTrack';
+const String kApiBaseUrl = 'https://mobile-ios-login.zani0x03.eti.br/api';
+const String kAiApiBaseUrl = 'https://mobile-ios-ia.zani0x03.eti.br/api';
+const String kAuthSistemaIdEnvKey = 'SISTEMA_ID';
+const Duration kApiTimeout = Duration(seconds: 20);
+const Duration kAiChatTimeout = Duration(minutes: 2);
+const int kChatPromptMaxLength = 1000;
 
 // Semantic colors (same in both themes)
 const Color kExpenseRed = Color(0xFFFF6B6B);
