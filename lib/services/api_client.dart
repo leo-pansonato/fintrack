@@ -34,6 +34,7 @@ class ApiClient {
     Map<String, String>? queryParameters,
     Map<String, String>? headers,
     bool authenticated = true,
+    Duration? timeout,
   }) {
     return _send(
       'GET',
@@ -41,6 +42,7 @@ class ApiClient {
       queryParameters: queryParameters,
       headers: headers,
       authenticated: authenticated,
+      timeout: timeout,
     );
   }
 
@@ -49,6 +51,7 @@ class ApiClient {
     Object? body,
     Map<String, String>? headers,
     bool authenticated = true,
+    Duration? timeout,
   }) {
     return _send(
       'POST',
@@ -56,6 +59,7 @@ class ApiClient {
       body: body,
       headers: headers,
       authenticated: authenticated,
+      timeout: timeout,
     );
   }
 
@@ -64,6 +68,7 @@ class ApiClient {
     Object? body,
     Map<String, String>? headers,
     bool authenticated = true,
+    Duration? timeout,
   }) {
     return _send(
       'PUT',
@@ -71,6 +76,7 @@ class ApiClient {
       body: body,
       headers: headers,
       authenticated: authenticated,
+      timeout: timeout,
     );
   }
 
@@ -78,12 +84,14 @@ class ApiClient {
     String path, {
     Map<String, String>? headers,
     bool authenticated = true,
+    Duration? timeout,
   }) {
     return _send(
       'DELETE',
       path,
       headers: headers,
       authenticated: authenticated,
+      timeout: timeout,
     );
   }
 
@@ -94,6 +102,7 @@ class ApiClient {
     Map<String, String>? queryParameters,
     Map<String, String>? headers,
     bool authenticated = true,
+    Duration? timeout,
   }) async {
     final requestHeaders = <String, String>{
       'Accept': 'application/json',
@@ -114,19 +123,21 @@ class ApiClient {
 
     final uri = _resolve(path, queryParameters);
     final encodedBody = body == null ? null : jsonEncode(body);
+    final requestTimeout = timeout ?? kApiTimeout;
 
     return switch (method) {
-      'GET' => _client.get(uri, headers: requestHeaders).timeout(kApiTimeout),
+      'GET' =>
+        _client.get(uri, headers: requestHeaders).timeout(requestTimeout),
       'POST' =>
         _client
             .post(uri, headers: requestHeaders, body: encodedBody)
-            .timeout(kApiTimeout),
+            .timeout(requestTimeout),
       'PUT' =>
         _client
             .put(uri, headers: requestHeaders, body: encodedBody)
-            .timeout(kApiTimeout),
+            .timeout(requestTimeout),
       'DELETE' =>
-        _client.delete(uri, headers: requestHeaders).timeout(kApiTimeout),
+        _client.delete(uri, headers: requestHeaders).timeout(requestTimeout),
       _ => throw ApiException('Método HTTP não suportado: $method'),
     };
   }

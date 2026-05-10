@@ -1,7 +1,7 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../repositories/chat_repository.dart';
 import '../utils/constants.dart';
 import '../widgets/chat_bubble.dart';
 
@@ -23,6 +23,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
+  bool _isSending = false;
   final List<_Mensagem> _mensagens = [
     _Mensagem(
       texto:
@@ -56,29 +57,48 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  void _enviarMensagem() {
+  Future<void> _enviarMensagem() async {
+    if (_isSending) return;
+
     final texto = _controller.text.trim();
     if (texto.isEmpty) return;
+    if (texto.length > kChatPromptMaxLength) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sua mensagem está muito longa.')),
+      );
+      return;
+    }
 
     setState(() {
+      _isSending = true;
       _mensagens.add(_Mensagem(texto: texto, isUser: true, hora: _horaAtual()));
     });
     _controller.clear();
+    FocusScope.of(context).unfocus();
     _scrollToEnd();
 
-    Future.delayed(const Duration(milliseconds: 1200), () {
+    try {
+      final resposta = await context.read<ChatRepository>().ask(texto);
+
       if (!mounted) return;
       setState(() {
         _mensagens.add(
-          _Mensagem(
-            texto: 'Não funciona kk',
-            isUser: false,
-            hora: _horaAtual(),
-          ),
+          _Mensagem(texto: resposta, isUser: false, hora: _horaAtual()),
         );
       });
-      _scrollToEnd();
-    });
+    } on ChatException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _mensagens.add(
+          _Mensagem(texto: error.message, isUser: false, hora: _horaAtual()),
+        );
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isSending = false);
+        _scrollToEnd();
+      }
+    }
   }
 
   @override
@@ -102,8 +122,16 @@ class _ChatScreenState extends State<ChatScreen> {
             child: ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              itemCount: _mensagens.length,
+              itemCount: _mensagens.length + (_isSending ? 1 : 0),
               itemBuilder: (context, index) {
+                if (_isSending && index == _mensagens.length) {
+                  return ChatBubble(
+                    texto: 'Pensando...',
+                    isUser: false,
+                    hora: _horaAtual(),
+                  );
+                }
+
                 final msg = _mensagens[index];
                 return ChatBubble(
                   texto: msg.texto,
@@ -123,11 +151,15 @@ class _ChatScreenState extends State<ChatScreen> {
                   Expanded(
                     child: TextField(
                       controller: _controller,
+                      enabled: !_isSending,
+                      maxLength: kChatPromptMaxLength,
+                      textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _enviarMensagem(),
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: colors.background,
                         hintText: 'Digite sua mensagem...',
+                        counterText: '',
                         hintStyle: TextStyle(color: colors.textSecondary),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
@@ -150,15 +182,28 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                   const SizedBox(width: 8),
                   GestureDetector(
-                    onTap: _enviarMensagem,
+                    onTap: _isSending ? null : _enviarMensagem,
                     child: CircleAvatar(
-                      backgroundColor: colors.accent,
+                      backgroundColor: _isSending
+                          ? colors.textSecondary.withValues(alpha: 0.4)
+                          : colors.accent,
                       radius: 22,
-                      child: const Icon(
-                        Icons.send_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
+                      child: _isSending
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : const Icon(
+                              Icons.send_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                     ),
                   ),
                 ],
