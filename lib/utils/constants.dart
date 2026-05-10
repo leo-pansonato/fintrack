@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 const String kAppName = 'FinTrack';
+const String kApiBaseUrl = 'https://mobile-ios-login.zani0x03.eti.br/api';
+const String kAuthSistemaIdEnvKey = 'SISTEMA_ID';
+const Duration kApiTimeout = Duration(seconds: 20);
 
 // Semantic colors (same in both themes)
 const Color kExpenseRed = Color(0xFFFF6B6B);

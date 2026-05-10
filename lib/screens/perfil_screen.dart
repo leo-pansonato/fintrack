@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 import '../utils/constants.dart';
 
@@ -51,7 +52,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
     ).showSnackBar(const SnackBar(content: Text('Em breve')));
   }
 
-  void _logout() {
+  Future<void> _logout() async {
+    await context.read<AuthNotifier>().logout();
+    if (!mounted) return;
     Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
   }
 

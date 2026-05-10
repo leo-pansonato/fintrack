@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/auth_provider.dart';
 import '../utils/constants.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -9,20 +12,22 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController();
+  final _usuarioController = TextEditingController();
   final _senhaController = TextEditingController();
   bool _obscureSenha = true;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _usuarioController.dispose();
     _senhaController.dispose();
     super.dispose();
   }
 
-  void _entrar() {
-    if (_emailController.text.trim().isEmpty ||
-        _senhaController.text.trim().isEmpty) {
+  Future<void> _entrar() async {
+    final usuario = _usuarioController.text.trim();
+    final senha = _senhaController.text;
+
+    if (usuario.isEmpty || senha.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Preencha todos os campos para continuar.'),
@@ -30,13 +35,33 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       return;
     }
-    Navigator.pushReplacementNamed(context, '/home');
+
+    FocusScope.of(context).unfocus();
+    final auth = context.read<AuthNotifier>();
+    final success = await auth.login(username: usuario, password: senha);
+
+    if (!mounted) return;
+
+    if (success) {
+      Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          auth.errorMessage ??
+              'Não foi possível entrar. Tente novamente em instantes.',
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
     final topPadding = MediaQuery.of(context).padding.top;
+    final isLoggingIn = context.watch<AuthNotifier>().isLoggingIn;
 
     return Scaffold(
       backgroundColor: colors.gradientStart,
@@ -97,7 +122,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: double.infinity,
                   constraints: BoxConstraints(
                     minHeight:
-                        MediaQuery.of(context).size.height - 310 - topPadding + 30,
+                        MediaQuery.of(context).size.height -
+                        310 -
+                        topPadding +
+                        30,
                   ),
                   decoration: BoxDecoration(
                     color: colors.background,
@@ -127,15 +155,17 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        // Email field
-                        _buildLabel('E-mail', colors),
+                        // Username field
+                        _buildLabel('Usuário', colors),
                         const SizedBox(height: 8),
                         _buildTextField(
-                          controller: _emailController,
-                          hint: 'seu@email.com',
-                          icon: Icons.email_outlined,
+                          controller: _usuarioController,
+                          hint: 'seu usuário',
+                          icon: Icons.person_outline,
                           colors: colors,
-                          keyboardType: TextInputType.emailAddress,
+                          keyboardType: TextInputType.text,
+                          textInputAction: TextInputAction.next,
+                          enabled: !isLoggingIn,
                         ),
                         const SizedBox(height: 16),
                         // Password field
@@ -147,6 +177,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           icon: Icons.lock_outline,
                           colors: colors,
                           obscure: _obscureSenha,
+                          enabled: !isLoggingIn,
+                          textInputAction: TextInputAction.done,
+                          onSubmitted: (_) {
+                            if (!isLoggingIn) _entrar();
+                          },
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscureSenha
@@ -155,8 +190,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               color: colors.textSecondary,
                               size: 20,
                             ),
-                            onPressed: () =>
-                                setState(() => _obscureSenha = !_obscureSenha),
+                            onPressed: isLoggingIn
+                                ? null
+                                : () => setState(
+                                    () => _obscureSenha = !_obscureSenha,
+                                  ),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -181,7 +219,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 24),
                         // Login button
                         GestureDetector(
-                          onTap: _entrar,
+                          onTap: isLoggingIn ? null : _entrar,
                           child: Container(
                             height: 52,
                             width: double.infinity,
@@ -195,22 +233,34 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: colors.gradientStart
-                                      .withValues(alpha: 0.3),
+                                  color: colors.gradientStart.withValues(
+                                    alpha: 0.3,
+                                  ),
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
                                 ),
                               ],
                             ),
                             alignment: Alignment.center,
-                            child: const Text(
-                              'Entrar',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                            child: isLoggingIn
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.4,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : const Text(
+                                    'Entrar',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -221,8 +271,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: Divider(color: colors.divider, height: 1),
                             ),
                             Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               child: Text(
                                 'ou',
                                 style: TextStyle(
@@ -250,9 +301,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             decoration: BoxDecoration(
                               color: colors.card,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: colors.divider,
-                              ),
+                              border: Border.all(color: colors.divider),
                             ),
                             alignment: Alignment.center,
                             child: Text(
@@ -295,24 +344,25 @@ class _LoginScreenState extends State<LoginScreen> {
     required AppColors colors,
     TextInputType? keyboardType,
     bool obscure = false,
+    bool enabled = true,
+    TextInputAction? textInputAction,
+    ValueChanged<String>? onSubmitted,
     Widget? suffixIcon,
   }) {
     return Container(
       decoration: BoxDecoration(
         color: colors.card,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: colors.divider,
-        ),
+        border: Border.all(color: colors.divider),
       ),
       child: TextField(
         controller: controller,
+        enabled: enabled,
         keyboardType: keyboardType,
+        textInputAction: textInputAction,
+        onSubmitted: onSubmitted,
         obscureText: obscure,
-        style: TextStyle(
-          fontSize: 15,
-          color: colors.textPrimary,
-        ),
+        style: TextStyle(fontSize: 15, color: colors.textPrimary),
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(

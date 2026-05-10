@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/theme_provider.dart';
+import 'screens/auth_gate.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_shell.dart';
 import 'utils/constants.dart';
@@ -51,8 +52,9 @@ class FinTrackApp extends StatelessWidget {
         extensions: const [AppColors.dark],
       ),
       themeMode: context.watch<ThemeNotifier>().themeMode,
-      initialRoute: '/login',
+      initialRoute: '/',
       routes: {
+        '/': (context) => const AuthGate(),
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const MainShell(),
       },
