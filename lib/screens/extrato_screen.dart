@@ -7,8 +7,9 @@ import '../utils/formatters.dart';
 import '../widgets/gasto_card.dart';
 
 class ExtratoScreen extends StatefulWidget {
+  final String userId;
   final VoidCallback? onTransacaoRemovida;
-  const ExtratoScreen({super.key, this.onTransacaoRemovida});
+  const ExtratoScreen({super.key, required this.userId, this.onTransacaoRemovida});
 
   @override
   State<ExtratoScreen> createState() => _ExtratoScreenState();
@@ -27,7 +28,7 @@ class _ExtratoScreenState extends State<ExtratoScreen> {
 
   Future<void> _carregarGastos() async {
     try {
-      final lista = await _repository.getAll();
+      final lista = await _repository.getAll(widget.userId);
       if (!mounted) return;
       setState(() => _gastos = lista);
     } finally {

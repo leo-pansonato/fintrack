@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
+import '../providers/preferences_provider.dart';
 import '../providers/theme_provider.dart';
 import '../utils/constants.dart';
 
@@ -46,6 +47,23 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
+  void _showCurrencySheet() {
+    final prefsNotifier = context.read<PreferencesNotifier>();
+    final colors = Theme.of(context).extension<AppColors>()!;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: colors.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => ChangeNotifierProvider.value(
+        value: prefsNotifier,
+        child: const _CurrencySheet(),
+      ),
+    );
+  }
+
   void _showComingSoon() {
     ScaffoldMessenger.of(
       context,
@@ -62,6 +80,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
     final currentTheme = context.watch<ThemeNotifier>().themeMode;
+    final currentCurrency = context.watch<PreferencesNotifier>().currencyCode;
 
     const double headerBase = 180;
     const double avatarSize = 100;
@@ -167,13 +186,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                   icon: Icons.attach_money_rounded,
                                   title: 'Moeda padrão',
                                   trailing: Text(
-                                    'BRL (R\$)',
+                                    PreferencesNotifier.labelFor(currentCurrency),
                                     style: TextStyle(
                                       fontSize: 13,
                                       color: colors.textSecondary,
                                     ),
                                   ),
-                                  onTap: _showComingSoon,
+                                  onTap: _showCurrencySheet,
                                 ),
                               ],
                             ),
@@ -442,6 +461,68 @@ class _AppearanceSheet extends StatelessWidget {
         context.read<ThemeNotifier>().setTheme(mode);
         Navigator.pop(context);
       },
+    );
+  }
+}
+
+class _CurrencySheet extends StatelessWidget {
+  const _CurrencySheet();
+
+  static const _options = [
+    ('BRL', 'Real Brasileiro', 'R\$'),
+    ('USD', 'Dólar Americano', '\$'),
+    ('EUR', 'Euro', '€'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<AppColors>()!;
+    final current = context.watch<PreferencesNotifier>().currencyCode;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Moeda padrão',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: colors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            for (final (code, name, symbol) in _options)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  '$code ($symbol)',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: colors.textPrimary,
+                    fontWeight: code == current
+                        ? FontWeight.w600
+                        : FontWeight.w400,
+                  ),
+                ),
+                subtitle: Text(
+                  name,
+                  style: TextStyle(fontSize: 13, color: colors.textSecondary),
+                ),
+                trailing: code == current
+                    ? Icon(Icons.check_circle, color: colors.accent)
+                    : Icon(Icons.circle_outlined, color: colors.textSecondary),
+                onTap: () {
+                  context.read<PreferencesNotifier>().setCurrency(code);
+                  Navigator.pop(context);
+                },
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

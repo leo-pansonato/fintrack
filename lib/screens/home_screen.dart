@@ -7,10 +7,11 @@ import '../utils/formatters.dart';
 import '../widgets/gasto_card.dart';
 
 class HomeScreen extends StatefulWidget {
+  final String userId;
   final VoidCallback? onProfileTap;
   final VoidCallback? onTransacaoRemovida;
 
-  const HomeScreen({super.key, this.onProfileTap, this.onTransacaoRemovida});
+  const HomeScreen({super.key, required this.userId, this.onProfileTap, this.onTransacaoRemovida});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -23,8 +24,38 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Gasto> _gastos = [];
   final _repository = GastoRepositoryImpl();
 
-  static const double _disponivel = 752.20;
   final _filtros = const ['Todos', 'Receita', 'Despesa'];
+
+  static const _meses = [
+    'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+    'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+  ];
+
+  String get _mesAtual {
+    final now = DateTime.now();
+    return '${_meses[now.month - 1]} de ${now.year}';
+  }
+
+  String get _saudacao {
+    final h = DateTime.now().hour;
+    if (h < 12) return 'Bom dia,';
+    if (h < 18) return 'Boa tarde,';
+    return 'Boa noite,';
+  }
+
+  double get _totalReceitas {
+    final now = DateTime.now();
+    return _gastos
+        .where((g) => g.valor > 0 && g.data.year == now.year && g.data.month == now.month)
+        .fold(0.0, (sum, g) => sum + g.valor);
+  }
+
+  double get _totalDespesas {
+    final now = DateTime.now();
+    return _gastos
+        .where((g) => g.valor < 0 && g.data.year == now.year && g.data.month == now.month)
+        .fold(0.0, (sum, g) => sum + g.valor.abs());
+  }
 
   @override
   void initState() {
@@ -34,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _carregarGastos() async {
     try {
-      final lista = await _repository.getAll();
+      final lista = await _repository.getAll(widget.userId);
       if (!mounted) return;
       setState(() => _gastos = lista);
     } finally {
@@ -83,8 +114,8 @@ class _HomeScreenState extends State<HomeScreen> {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 180.0,
-            toolbarHeight: 90.0,
+            expandedHeight: 280.0,
+            toolbarHeight: 70.0,
             pinned: true,
             elevation: 0,
             backgroundColor: colors.gradientStart,
@@ -120,21 +151,65 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.only(
                         left: 24.0,
                         right: 24.0,
-                        bottom: 50.0,
+                        bottom: 48.0,
                       ),
-                      child: Row(
-                        spacing: 12,
-                        mainAxisAlignment: MainAxisAlignment.start,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildActionButton(
-                            icon: Icons.flag_outlined,
-                            label: 'Metas',
-                            colors: colors,
+                          Text(
+                            _mesAtual,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white.withValues(alpha: 0.6),
+                              letterSpacing: 0.4,
+                            ),
                           ),
-                          _buildActionButton(
-                            icon: Icons.auto_awesome_mosaic_rounded,
-                            label: 'Mais',
-                            colors: colors,
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildSummaryCard(
+                                  label: 'Receitas',
+                                  valor: _totalReceitas,
+                                  icon: Icons.arrow_upward_rounded,
+                                  iconColor: kIncomeGreen,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildSummaryCard(
+                                  label: 'Despesas',
+                                  valor: _totalDespesas,
+                                  icon: Icons.arrow_downward_rounded,
+                                  iconColor: kExpenseRed,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              spacing: 8,
+                              children: [
+                                _buildActionButton(
+                                  icon: Icons.flag_outlined,
+                                  label: 'Metas',
+                                  colors: colors,
+                                ),
+                                _buildActionButton(
+                                  icon: Icons.bar_chart_rounded,
+                                  label: 'Relatório',
+                                  colors: colors,
+                                ),
+                                _buildActionButton(
+                                  icon: Icons.event_repeat_rounded,
+                                  label: 'Agendados',
+                                  colors: colors,
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -294,15 +369,22 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
+              Text(
+                _saudacao,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.white.withValues(alpha: 0.65),
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
               Row(
                 children: [
-                  Text(
-                    _formatarValor(_disponivel),
-                    style: const TextStyle(
-                      fontSize: 32,
+                  const Text(
+                    'Leonardo',
+                    style: TextStyle(
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
-                      letterSpacing: -0.5,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -313,18 +395,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       _valoresVisiveis
                           ? Icons.visibility_outlined
                           : Icons.visibility_off_outlined,
-                      color: Colors.white.withValues(alpha: 0.7),
-                      size: 22,
+                      color: Colors.white.withValues(alpha: 0.55),
+                      size: 18,
                     ),
                   ),
                 ],
-              ),
-              Text(
-                'Gastos Disponíveis',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.white.withValues(alpha: 0.8),
-                ),
               ),
             ],
           ),
@@ -332,8 +407,8 @@ class _HomeScreenState extends State<HomeScreen> {
         GestureDetector(
           onTap: widget.onProfileTap,
           child: Container(
-            width: 48,
-            height: 48,
+            width: 42,
+            height: 42,
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
               image: DecorationImage(
@@ -344,6 +419,64 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSummaryCard({
+    required String label,
+    required double valor,
+    required IconData icon,
+    required Color iconColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.13),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.18),
+          width: 0.8,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.22),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: iconColor, size: 14),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withValues(alpha: 0.75),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _formatarValor(valor),
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              letterSpacing: -0.3,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
     );
   }
 

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
 import 'providers/auth_provider.dart';
+import 'providers/preferences_provider.dart';
 import 'providers/theme_provider.dart';
 import 'repositories/auth_repository.dart';
 import 'repositories/auth_repository_impl.dart';
@@ -24,6 +25,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeNotifier(prefs)),
+        ChangeNotifierProvider(create: (_) => PreferencesNotifier(prefs)),
         Provider<SecureTokenStorage>.value(value: tokenStorage),
         Provider<ApiClient>(
           create: (_) => ApiClient(tokenStorage: tokenStorage),

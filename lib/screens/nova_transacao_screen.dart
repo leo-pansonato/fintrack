@@ -6,7 +6,8 @@ import '../utils/constants.dart';
 import '../utils/formatters.dart';
 
 class NovaTransacaoScreen extends StatefulWidget {
-  const NovaTransacaoScreen({super.key});
+  final String userId;
+  const NovaTransacaoScreen({super.key, required this.userId});
 
   @override
   State<NovaTransacaoScreen> createState() => _NovaTransacaoScreenState();
@@ -73,7 +74,7 @@ class _NovaTransacaoScreenState extends State<NovaTransacaoScreen> {
     );
 
     try {
-      await _repository.add(gasto);
+      await _repository.add(gasto, widget.userId);
       if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e) {
