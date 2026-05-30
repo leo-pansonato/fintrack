@@ -62,6 +62,17 @@ class DbHelper {
     return maps.map((m) => Gasto.fromMap(m)).toList();
   }
 
+  Future<int> updateGasto(Gasto gasto, String userId) async {
+    final db = await database;
+    final map = gasto.toMap()..['user_id'] = userId;
+    return await db.update(
+      'gastos',
+      map,
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [gasto.id, userId],
+    );
+  }
+
   Future<int> deleteGasto(String id) async {
     final db = await database;
     return await db.delete('gastos', where: 'id = ?', whereArgs: [id]);

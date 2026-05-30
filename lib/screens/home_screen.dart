@@ -5,6 +5,7 @@ import '../repositories/gasto_repository_impl.dart';
 import '../utils/constants.dart';
 import '../utils/formatters.dart';
 import '../widgets/gasto_card.dart';
+import 'editar_transacao_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String userId;
@@ -76,6 +77,16 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _remover(Gasto gasto) async {
     await _repository.remove(gasto.id);
     widget.onTransacaoRemovida?.call();
+  }
+
+  Future<void> _editar(Gasto gasto) async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditarTransacaoScreen(gasto: gasto, userId: widget.userId),
+      ),
+    );
+    if (result == true) _carregarGastos();
   }
 
   List<Gasto> get _gastosFiltrados {
@@ -354,7 +365,11 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 12),
         ...gastos.map(
-          (g) => GastoCard(gasto: g, onDismissed: () => _remover(g)),
+          (g) => GastoCard(
+            gasto: g,
+            onDismissed: () => _remover(g),
+            onTap: () => _editar(g),
+          ),
         ),
       ],
     );

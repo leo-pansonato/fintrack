@@ -7,8 +7,9 @@ import '../utils/formatters.dart';
 class GastoCard extends StatelessWidget {
   final Gasto gasto;
   final VoidCallback? onDismissed;
+  final VoidCallback? onTap;
 
-  const GastoCard({super.key, required this.gasto, this.onDismissed});
+  const GastoCard({super.key, required this.gasto, this.onDismissed, this.onTap});
 
   IconData _getCategoryIcon(String categoria) {
     switch (categoria.toLowerCase()) {
@@ -29,7 +30,11 @@ class GastoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
     final icon = _getCategoryIcon(gasto.categoria);
-    final card = _buildCard(colors, icon);
+    Widget card = _buildCard(colors, icon);
+
+    if (onTap != null) {
+      card = GestureDetector(onTap: onTap, child: card);
+    }
 
     if (onDismissed == null) return card;
 

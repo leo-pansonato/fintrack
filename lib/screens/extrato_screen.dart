@@ -5,6 +5,7 @@ import '../repositories/gasto_repository_impl.dart';
 import '../utils/constants.dart';
 import '../utils/formatters.dart';
 import '../widgets/gasto_card.dart';
+import 'editar_transacao_screen.dart';
 
 class ExtratoScreen extends StatefulWidget {
   final String userId;
@@ -40,6 +41,19 @@ class _ExtratoScreenState extends State<ExtratoScreen> {
     await _repository.remove(gasto.id);
     setState(() => _gastos.removeWhere((g) => g.id == gasto.id));
     widget.onTransacaoRemovida?.call();
+  }
+
+  Future<void> _editar(Gasto gasto) async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditarTransacaoScreen(gasto: gasto, userId: widget.userId),
+      ),
+    );
+    if (result == true) {
+      _carregarGastos();
+      widget.onTransacaoRemovida?.call();
+    }
   }
 
   @override
@@ -114,6 +128,7 @@ class _ExtratoScreenState extends State<ExtratoScreen> {
                                   return GastoCard(
                                     gasto: gasto,
                                     onDismissed: () => _remover(gasto),
+                                    onTap: () => _editar(gasto),
                                   );
                                 },
                               ),
