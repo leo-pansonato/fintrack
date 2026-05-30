@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../providers/auth_provider.dart';
 import '../utils/constants.dart';
 import 'chat_screen.dart';
 import 'extrato_screen.dart';
@@ -20,10 +22,10 @@ class _MainShellState extends State<MainShell> {
 
   void _reload() => setState(() => _version++);
 
-  Future<void> _adicionarTransacao() async {
+  Future<void> _adicionarTransacao(String userId) async {
     final result = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (_) => const NovaTransacaoScreen()),
+      MaterialPageRoute(builder: (_) => NovaTransacaoScreen(userId: userId)),
     );
     if (result == true) _reload();
   }
@@ -31,15 +33,18 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
+    final userId = context.read<AuthNotifier>().session?.userId ?? '';
 
     final screens = [
       HomeScreen(
         key: ValueKey('home-$_version'),
+        userId: userId,
         onProfileTap: () => setState(() => _currentIndex = 3),
         onTransacaoRemovida: _reload,
       ),
       ExtratoScreen(
         key: ValueKey('extrato-$_version'),
+        userId: userId,
         onTransacaoRemovida: _reload,
       ),
       const ChatScreen(),
@@ -48,22 +53,18 @@ class _MainShellState extends State<MainShell> {
 
     return Scaffold(
       backgroundColor: colors.background,
-      extendBody: true,
       body: IndexedStack(index: _currentIndex, children: screens),
-      floatingActionButton: FloatingActionButton(
-        elevation: 0,
+      floatingActionButton: _currentIndex >= 2 ? null : FloatingActionButton(
+        elevation: 4,
         backgroundColor: colors.accent,
         shape: const CircleBorder(),
-        onPressed: _adicionarTransacao,
+        onPressed: () => _adicionarTransacao(userId),
         child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
         color: colors.card,
         elevation: 10,
         shadowColor: Colors.black12,
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 8,
         child: SizedBox(
           height: 60,
           child: Row(
@@ -81,7 +82,6 @@ class _MainShellState extends State<MainShell> {
                 index: 1,
                 colors: colors,
               ),
-              const SizedBox(width: 32),
               _buildNavItem(
                 icon: Icons.chat_bubble_outline_rounded,
                 label: 'Chat',

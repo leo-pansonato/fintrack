@@ -5,22 +5,28 @@ import '../repositories/gasto_repository_impl.dart';
 import '../utils/constants.dart';
 import '../utils/formatters.dart';
 
-class NovaTransacaoScreen extends StatefulWidget {
+class EditarTransacaoScreen extends StatefulWidget {
+  final Gasto gasto;
   final String userId;
-  const NovaTransacaoScreen({super.key, required this.userId});
+
+  const EditarTransacaoScreen({
+    super.key,
+    required this.gasto,
+    required this.userId,
+  });
 
   @override
-  State<NovaTransacaoScreen> createState() => _NovaTransacaoScreenState();
+  State<EditarTransacaoScreen> createState() => _EditarTransacaoScreenState();
 }
 
-class _NovaTransacaoScreenState extends State<NovaTransacaoScreen> {
-  final _tituloController = TextEditingController();
-  final _valorController = TextEditingController();
+class _EditarTransacaoScreenState extends State<EditarTransacaoScreen> {
+  late final TextEditingController _tituloController;
+  late final TextEditingController _valorController;
   final _repository = GastoRepositoryImpl();
 
-  bool _isDespesa = true;
-  String? _categoriaSelecionada;
-  DateTime _data = DateTime.now();
+  late bool _isDespesa;
+  late String? _categoriaSelecionada;
+  late DateTime _data;
   bool _isLoading = false;
 
   static const _categorias = [
@@ -30,6 +36,19 @@ class _NovaTransacaoScreenState extends State<NovaTransacaoScreen> {
     'pagamento',
     'outros',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    final g = widget.gasto;
+    _isDespesa = g.valor < 0;
+    _categoriaSelecionada = g.categoria;
+    _data = g.data;
+    _tituloController = TextEditingController(text: g.titulo);
+    _valorController = TextEditingController(
+      text: g.valor.abs().toStringAsFixed(2).replaceAll('.', ','),
+    );
+  }
 
   @override
   void dispose() {
@@ -43,30 +62,23 @@ class _NovaTransacaoScreenState extends State<NovaTransacaoScreen> {
     final valorText = _valorController.text.trim().replaceAll(',', '.');
 
     if (titulo.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Informe o título da transação.')),
-      );
+      _showSnack('Informe o título da transação.');
       return;
     }
-
     final valorParsed = double.tryParse(valorText);
     if (valorParsed == null || valorParsed <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Informe um valor válido maior que zero.')),
-      );
+      _showSnack('Informe um valor válido maior que zero.');
       return;
     }
-
     if (_categoriaSelecionada == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecione uma categoria.')),
-      );
+      _showSnack('Selecione uma categoria.');
       return;
     }
 
     setState(() => _isLoading = true);
 
-    final gasto = Gasto(
+    final atualizado = Gasto(
+      id: widget.gasto.id,
       titulo: titulo,
       valor: _isDespesa ? -valorParsed : valorParsed,
       categoria: _categoriaSelecionada!,
@@ -74,17 +86,54 @@ class _NovaTransacaoScreenState extends State<NovaTransacaoScreen> {
     );
 
     try {
-      await _repository.add(gasto, widget.userId);
+      await _repository.update(atualizado, widget.userId);
       if (!mounted) return;
       Navigator.pop(context, true);
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Erro ao salvar. Tente novamente.')),
-      );
+      _showSnack('Erro ao salvar. Tente novamente.');
     }
   }
+
+  Future<void> _excluir() async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final colors = Theme.of(ctx).extension<AppColors>()!;
+        return AlertDialog(
+          backgroundColor: colors.card,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            'Excluir transação',
+            style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w600),
+          ),
+          content: Text(
+            'Tem certeza que deseja excluir "${widget.gasto.titulo}"?',
+            style: TextStyle(color: colors.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('Cancelar', style: TextStyle(color: colors.textSecondary)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Excluir', style: TextStyle(color: kExpenseRed)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmar != true) return;
+    await _repository.remove(widget.gasto.id);
+    if (!mounted) return;
+    Navigator.pop(context, true);
+  }
+
+  void _showSnack(String msg) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
   Future<void> _selecionarData() async {
     final picked = await showDatePicker(
@@ -120,15 +169,18 @@ class _NovaTransacaoScreenState extends State<NovaTransacaoScreen> {
             Column(
               children: [
                 SizedBox(height: topPadding + 16),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new,
-                      color: Colors.white,
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
                     ),
-                    onPressed: () => Navigator.pop(context),
-                  ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline_rounded, color: Colors.white),
+                      onPressed: _isLoading ? null : _excluir,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Container(
@@ -148,7 +200,7 @@ class _NovaTransacaoScreenState extends State<NovaTransacaoScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  _isDespesa ? 'Nova Despesa' : 'Nova Receita',
+                  _isDespesa ? 'Editar Despesa' : 'Editar Receita',
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
@@ -158,7 +210,7 @@ class _NovaTransacaoScreenState extends State<NovaTransacaoScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Registre uma transação',
+                  'Atualize os dados da transação',
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.white.withValues(alpha: 0.7),
@@ -168,47 +220,36 @@ class _NovaTransacaoScreenState extends State<NovaTransacaoScreen> {
                 Container(
                   width: double.infinity,
                   constraints: BoxConstraints(
-                    minHeight:
-                        MediaQuery.of(context).size.height - 220 - topPadding + 30,
+                    minHeight: MediaQuery.of(context).size.height - 220 - topPadding + 30,
                   ),
                   decoration: BoxDecoration(
                     color: colors.background,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(30),
-                    ),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(24, 28, 24, 40),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Toggle Despesa/Receita
                         Row(
                           children: [
                             Expanded(
                               child: GestureDetector(
-                                onTap: () =>
-                                    setState(() => _isDespesa = true),
+                                onTap: () => setState(() => _isDespesa = true),
                                 child: Container(
                                   height: 44,
                                   decoration: BoxDecoration(
-                                    color: _isDespesa
-                                        ? kExpenseRed
-                                        : colors.card,
+                                    color: _isDespesa ? kExpenseRed : colors.card,
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: _isDespesa
-                                          ? kExpenseRed
-                                          : colors.divider,
+                                      color: _isDespesa ? kExpenseRed : colors.divider,
                                     ),
                                   ),
                                   alignment: Alignment.center,
                                   child: Text(
                                     'Despesa',
                                     style: TextStyle(
-                                      color: _isDespesa
-                                          ? Colors.white
-                                          : colors.textSecondary,
+                                      color: _isDespesa ? Colors.white : colors.textSecondary,
                                       fontWeight: FontWeight.w600,
                                       fontSize: 14,
                                     ),
@@ -219,28 +260,21 @@ class _NovaTransacaoScreenState extends State<NovaTransacaoScreen> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: GestureDetector(
-                                onTap: () =>
-                                    setState(() => _isDespesa = false),
+                                onTap: () => setState(() => _isDespesa = false),
                                 child: Container(
                                   height: 44,
                                   decoration: BoxDecoration(
-                                    color: !_isDespesa
-                                        ? kIncomeGreen
-                                        : colors.card,
+                                    color: !_isDespesa ? kIncomeGreen : colors.card,
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: !_isDespesa
-                                          ? kIncomeGreen
-                                          : colors.divider,
+                                      color: !_isDespesa ? kIncomeGreen : colors.divider,
                                     ),
                                   ),
                                   alignment: Alignment.center,
                                   child: Text(
                                     'Receita',
                                     style: TextStyle(
-                                      color: !_isDespesa
-                                          ? Colors.white
-                                          : colors.textSecondary,
+                                      color: !_isDespesa ? Colors.white : colors.textSecondary,
                                       fontWeight: FontWeight.w600,
                                       fontSize: 14,
                                     ),
@@ -267,9 +301,7 @@ class _NovaTransacaoScreenState extends State<NovaTransacaoScreen> {
                           hint: '0,00',
                           icon: Icons.attach_money_rounded,
                           colors: colors,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         ),
                         const SizedBox(height: 16),
                         _buildLabel('Categoria', colors),
@@ -280,35 +312,24 @@ class _NovaTransacaoScreenState extends State<NovaTransacaoScreen> {
                           children: _categorias.map((cat) {
                             final selecionado = _categoriaSelecionada == cat;
                             return GestureDetector(
-                              onTap: () => setState(
-                                () => _categoriaSelecionada = cat,
-                              ),
+                              onTap: () => setState(() => _categoriaSelecionada = cat),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 8,
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                                 decoration: BoxDecoration(
                                   color: selecionado
                                       ? colors.accent.withValues(alpha: 0.1)
                                       : colors.card,
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                    color: selecionado
-                                        ? colors.accent
-                                        : colors.divider,
+                                    color: selecionado ? colors.accent : colors.divider,
                                   ),
                                 ),
                                 child: Text(
                                   cat[0].toUpperCase() + cat.substring(1),
                                   style: TextStyle(
                                     fontSize: 13,
-                                    fontWeight: selecionado
-                                        ? FontWeight.w600
-                                        : FontWeight.w400,
-                                    color: selecionado
-                                        ? colors.accent
-                                        : colors.textSecondary,
+                                    fontWeight: selecionado ? FontWeight.w600 : FontWeight.w400,
+                                    color: selecionado ? colors.accent : colors.textSecondary,
                                   ),
                                 ),
                               ),
@@ -330,18 +351,12 @@ class _NovaTransacaoScreenState extends State<NovaTransacaoScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: Row(
                               children: [
-                                Icon(
-                                  Icons.calendar_today_outlined,
-                                  color: colors.textSecondary,
-                                  size: 20,
-                                ),
+                                Icon(Icons.calendar_today_outlined,
+                                    color: colors.textSecondary, size: 20),
                                 const SizedBox(width: 12),
                                 Text(
                                   formatDataDDMMYYYY(_data),
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    color: colors.textPrimary,
-                                  ),
+                                  style: TextStyle(fontSize: 15, color: colors.textPrimary),
                                 ),
                               ],
                             ),
@@ -355,16 +370,12 @@ class _NovaTransacaoScreenState extends State<NovaTransacaoScreen> {
                             width: double.infinity,
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                colors: [
-                                  colors.gradientStart,
-                                  colors.gradientEnd,
-                                ],
+                                colors: [colors.gradientStart, colors.gradientEnd],
                               ),
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: colors.gradientStart
-                                      .withValues(alpha: 0.3),
+                                  color: colors.gradientStart.withValues(alpha: 0.3),
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
                                 ),
@@ -381,7 +392,7 @@ class _NovaTransacaoScreenState extends State<NovaTransacaoScreen> {
                                     ),
                                   )
                                 : const Text(
-                                    'Salvar',
+                                    'Salvar alterações',
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,
@@ -405,11 +416,7 @@ class _NovaTransacaoScreenState extends State<NovaTransacaoScreen> {
   Widget _buildLabel(String text, AppColors colors) {
     return Text(
       text,
-      style: TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-        color: colors.textPrimary,
-      ),
+      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: colors.textPrimary),
     );
   }
 
@@ -438,10 +445,7 @@ class _NovaTransacaoScreenState extends State<NovaTransacaoScreen> {
           ),
           prefixIcon: Icon(icon, color: colors.textSecondary, size: 20),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 14,
-          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
       ),
     );

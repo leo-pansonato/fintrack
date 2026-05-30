@@ -6,10 +6,13 @@ class GastoRepositoryImpl implements GastoRepository {
   final _db = DbHelper();
 
   @override
-  Future<List<Gasto>> getAll() async => await _db.getAllGastos();
+  Future<List<Gasto>> getAll(String userId) async => await _db.getAllGastos(userId);
 
   @override
-  Future<void> add(Gasto gasto) async => await _db.insertGasto(gasto);
+  Future<void> add(Gasto gasto, String userId) async => await _db.insertGasto(gasto, userId);
+
+  @override
+  Future<void> update(Gasto gasto, String userId) async => await _db.updateGasto(gasto, userId);
 
   @override
   Future<void> remove(String id) async => await _db.deleteGasto(id);

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class AuthSession {
   final String accessToken;
   final int expiresIn;
@@ -89,6 +91,18 @@ class AuthSession {
   String get authorizationHeader => '$tokenType $accessToken';
 
   bool get hasAccessToken => accessToken.trim().isNotEmpty;
+
+  String get userId {
+    try {
+      final parts = accessToken.split('.');
+      if (parts.length < 2) return '';
+      final payload = base64Url.normalize(parts[1]);
+      final claims = jsonDecode(utf8.decode(base64Url.decode(payload))) as Map<String, dynamic>;
+      return (claims['sub'] as String?) ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
 
   bool get isAccessTokenExpired {
     final expiresAt = accessTokenExpiresAt;
